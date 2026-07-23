@@ -1,7 +1,7 @@
 # Exploratory analysis ----------------------------------------------------
 
 categorical_summary <- hospital |>
-  dplyr::count(SURVIVE, Sex, SHOCK_TYP, RECORD, name = "n")
+  dplyr::count(SURVIVE, Sex, SHOCK_TYP, name = "n")
 readr::write_csv(categorical_summary, file.path("results", "categorical_summary.csv"))
 
 numeric_variables <- c("SBP", "DBP", "MAP", "UO", "HG", "MCVP", "AGE", "HT")

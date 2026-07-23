@@ -14,7 +14,7 @@ univariate_results <- purrr::map_dfr(candidate_predictors, function(predictor) {
 })
 readr::write_csv(univariate_results, file.path("results", "univariate_logistic_regression.csv"))
 
-# Split by patient ID so repeated records from one patient cannot occur in both sets.
+# Split the one-record-per-patient admission dataset into training and testing sets.
 set.seed(analysis_seed)
 patient_ids <- unique(hospital$ID)
 training_ids <- sample(patient_ids, size = floor(0.8 * length(patient_ids)))
@@ -26,7 +26,7 @@ testing_model_data <- dplyr::select(testing_data, -ID)
 split_summary <- tibble::tibble(
   split = c("training", "testing"),
   patients = c(dplyr::n_distinct(training_data$ID), dplyr::n_distinct(testing_data$ID)),
-  records = c(nrow(training_data), nrow(testing_data))
+  admission_records = c(nrow(training_data), nrow(testing_data))
 )
 readr::write_csv(split_summary, file.path("results", "train_test_split.csv"))
 

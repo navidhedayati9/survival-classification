@@ -1,8 +1,8 @@
 # Project setup -----------------------------------------------------------
 
 required_packages <- c(
-  "broom", "corrplot", "dplyr", "ggplot2", "ipred", "purrr",
-  "randomForest", "readr", "rpart", "scales", "tibble", "tidyr"
+  "broom", "corrplot", "dplyr", "ggplot2", "purrr",
+  "readr", "tibble", "tidyr"
 )
 
 missing_packages <- required_packages[

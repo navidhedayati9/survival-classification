@@ -1,5 +1,5 @@
 truth,estimate,Freq
-Survived,Survived,21
-Died,Survived,11
-Survived,Died,3
-Died,Died,11
+Survived,Survived,10
+Died,Survived,4
+Survived,Died,2
+Died,Died,7
