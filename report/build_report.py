@@ -22,7 +22,7 @@ from reportlab.platypus import (
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_DIR = ROOT / "report"
 FIGURES = ROOT / "figures"
-OUTPUT = REPORT_DIR / "Survival_Classification_Professional_Report.pdf"
+OUTPUT = REPORT_DIR / "Survival_Classification_Report.pdf"
 REPORT_FIGURES = REPORT_DIR / "figures"
 
 
