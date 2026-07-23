@@ -7,18 +7,18 @@ This project examines whether routinely collected physiological measurements can
 ## Research questions
 
 1. Which demographic and physiological variables are associated with patient survival?
-2. How accurately can logistic regression and tree-based classifiers distinguish survival outcomes?
-3. Which predictors contribute most strongly to the fitted models?
-4. How do an interpretable statistical model and more flexible machine-learning models compare on held-out patients?
+2. How accurately can logistic regression distinguish survival outcomes?
+3. Which predictors contribute most strongly to the fitted logistic model?
+4. How should the fitted odds ratios be interpreted clinically and statistically?
 
 ## Data
 
-The dataset contains **224 observations from 112 critically ill patients**. Each patient has two records:
+The source dataset contains **224 observations from 112 critically ill patients**. Each patient has two records:
 
 - `Initial`: measurements recorded on admission.
 - `Final`: measurements recorded shortly before discharge or death.
 
-The outcome, `SURVIVE`, has two classes: `Survived` and `Died`. The raw CSV intentionally has no header row; column names are assigned during import. The original 2020 analysis read the first observation as a header and therefore retained only 223 records. The revised workflow imports and validates all 224 records.
+The outcome, `SURVIVE`, has two classes: `Survived` and `Died`. The raw CSV intentionally has no header row; column names are assigned during import. The original 2020 analysis read the first observation as a header and therefore retained only 223 records. The revised workflow imports and validates all 224 records, then restricts the primary analysis to the **112 initial/admission records** so that no post-admission information enters the models.
 
 ### Data dictionary
 
@@ -50,7 +50,7 @@ Measurement units beyond those explicitly documented in the original report shou
 
 ## Methodology
 
-The analysis proceeds in five stages:
+The analysis proceeds in four stages:
 
 1. **Import and validation**
    - Assign the 21 expected column names to the headerless CSV.
@@ -60,29 +60,27 @@ The analysis proceeds in five stages:
    - Produce grouped descriptive statistics and box plots.
    - Examine correlations among quantitative predictors.
 3. **Statistical modeling**
+   - Restrict the analytical dataset to one initial record per patient.
    - Fit separate univariate logistic regressions for candidate predictors.
    - Fit a multivariable logistic regression using `SBP`, `MCVP`, `UO`, `HG`, `SHOCK_TYP`, and the `SBP:UO` interaction retained from the original methodology.
    - Report estimated odds ratios and confidence intervals.
-4. **Machine-learning models**
-   - Fit a classification tree pruned with the one-standard-error rule.
-   - Fit bagging and random-forest classifiers using 1,500 trees.
-5. **Evaluation**
-   - Compare accuracy, misclassification rate, sensitivity, and specificity on held-out patients.
-   - Save confusion matrices and model summaries as reproducible output files.
+4. **Evaluation**
+   - Report accuracy, misclassification rate, sensitivity, and specificity on held-out patients.
+   - Save the confusion matrix, odds ratios, and model summary as reproducible output files.
 
-## Leakage-safe validation
+## Admission-time validation
 
-Because each patient contributes an initial and a final observation, randomly splitting individual rows could place one patient's initial record in training and the same patient's final record in testing. That would expose the models to information about a test patient during training and could overstate performance.
+The primary research question asks whether information available at admission can predict survival. Final measurements occur shortly before discharge or death and therefore contain future information that would not be available at the prediction time.
 
 The revised analysis therefore:
 
-- Samples unique patient IDs using a fixed seed (`set.seed(4)`).
-- Assigns every record for a patient to the same partition.
-- Uses 89 patients (178 records) for training and 23 patients (46 records) for testing.
-- Applies the identical split to all four models for a fair comparison.
-- Excludes `ID` from the predictor set.
+- validates that every patient has one initial and one final source record;
+- retains only the 112 initial records for modeling;
+- samples unique patient IDs using a fixed seed (`set.seed(4)`);
+- uses 89 patients (89 admission records) for training and 23 patients (23 admission records) for testing;
+- excludes `ID` and the now-constant `RECORD` field from the predictor set.
 
-This design is more defensible than the row-level split used in the original report, although repeated grouped resampling would provide a more stable performance estimate than one holdout split.
+This design estimates admission-time performance without temporal or patient-level leakage, although repeated stratified resampling would provide a more stable estimate than one holdout split.
 
 ## Findings
 
@@ -90,16 +88,25 @@ Performance on the patient-level held-out test set was:
 
 | Model | Accuracy | Sensitivity | Specificity |
 |---|---:|---:|---:|
-| Classification tree | 76.1% | 54.5% | 95.8% |
-| Random forest | 71.7% | 63.6% | 79.2% |
-| Logistic regression | 69.6% | 50.0% | 87.5% |
-| Bagging | 69.6% | 54.5% | 83.3% |
+| Logistic regression | 73.9% | 63.6% | 83.3% |
 
-In this particular split, the classification tree achieved the highest accuracy and specificity, while the random forest achieved the highest sensitivity for identifying patients who died. The ranking differs from the 2020 report, which favored bagging, because the revised analysis restores the omitted first observation and evaluates models on completely unseen patients.
+Logistic regression correctly classified 17 of the 23 held-out patients: 10 of 12 survivors and 7 of 11 patients who died. Because the test set is small, these values should be treated as a preliminary internal estimate rather than definitive clinical performance.
 
-![Model performance](figures/model_performance.png)
+### Interpreting odds ratios
 
-The sample is small, so these values should be treated as estimates from one split rather than definitive evidence that one model is superior.
+Logistic regression models the odds of the positive outcome, which is `Died` in this project. Exponentiating a regression coefficient produces an odds ratio:
+
+- An odds ratio of `1` means no estimated change in the odds of death.
+- An odds ratio below `1` means higher predictor values are associated with lower odds of death.
+- An odds ratio above `1` means higher predictor values are associated with higher odds of death.
+
+For a continuous predictor, the odds ratio applies to a one-unit increase while holding the other model terms constant. For example, the SBP odds ratio of approximately `0.972` corresponds to about a 2.8% decrease in the estimated odds of death per one-unit increase in SBP, subject to the `SBP:UO` interaction. For a categorical predictor, the odds ratio compares one category with the stated reference category. For example, shock-type odds ratios compare each shock category with `Non-shock`.
+
+Odds and probabilities are not the same. A 2.8% change in odds is not necessarily a 2.8 percentage-point change in probability; the probability change depends on the patient's starting risk and other predictor values. Confidence intervals describe estimation uncertainty. Intervals containing `1` indicate that the data do not establish an odds-ratio difference from 1 at the corresponding confidence level.
+
+The `SBP:UO` interaction means that the SBP association depends on urinary output and the urinary-output association depends on SBP. Consequently, the SBP and UO main-effect odds ratios should not be interpreted as constant effects across all values of the other variable.
+
+The sample is small, so these values should be treated as estimates from one split rather than definitive evidence of clinical performance.
 
 ## Repository structure
 
@@ -113,9 +120,7 @@ survival-classification/
 │   ├── 01_import_preprocess.R       # Import, validation, factor conversion
 │   ├── 02_exploratory_analysis.R    # Summaries, plots, correlations
 │   ├── 03_logistic_regression.R     # Split, univariate and final logistic models
-│   ├── 04_classification_tree.R     # Tree fitting, pruning, evaluation
-│   ├── 05_ensemble_models.R         # Bagging and random forest
-│   ├── 06_model_evaluation.R        # Model comparison and performance plot
+│   ├── 06_model_evaluation.R        # Held-out logistic-regression metrics
 │   └── run_analysis.R               # Complete execution pipeline
 ├── figures/                         # Generated visualizations
 ├── results/                         # Generated tables and metrics
@@ -138,12 +143,8 @@ install.packages(c(
   "corrplot",
   "dplyr",
   "ggplot2",
-  "ipred",
   "purrr",
-  "randomForest",
   "readr",
-  "rpart",
-  "scales",
   "tibble",
   "tidyr"
 ))
@@ -168,19 +169,18 @@ For exact package-version reproducibility, a future improvement is to initialize
 
 - **Small sample:** The dataset contains only 112 patients, limiting precision and model complexity.
 - **Single holdout split:** Results may vary with a different patient partition. Grouped repeated cross-validation or bootstrap validation is preferable.
-- **Temporal leakage risk:** Final measurements occur shortly before discharge or death and may contain information unavailable when an early clinical prediction would be required. A deployment-oriented model should be trained and evaluated using admission-time information only.
+- **Admission-only scope:** The primary analysis excludes final measurements to prevent temporal leakage; those records may be used separately for longitudinal or change analyses.
 - **No external validation:** Performance has not been tested on patients from another hospital, region, or time period.
 - **Historical data and limited provenance:** The age, collection protocol, population characteristics, and complete measurement units require further documentation.
 - **Feature-selection uncertainty:** Univariate significance and correlation-based screening can be unstable in small samples and do not guarantee optimal predictive performance.
-- **Class-specific performance:** Sensitivity for patients who died remains modest across models; accuracy alone is not sufficient for a clinically consequential task.
-- **No causal interpretation:** Associations and variable importance do not establish that a predictor causes survival or death.
+- **Class-specific performance:** Sensitivity for patients who died remains modest; accuracy alone is not sufficient for a clinically consequential task.
+- **No causal interpretation:** Odds ratios describe adjusted associations and do not establish that a predictor causes survival or death.
 
 ## Next steps
 
-- Restrict prediction to initial/admission measurements and define a precise prediction time.
 - Use repeated grouped cross-validation by patient.
 - Add ROC-AUC, precision-recall, calibration, and uncertainty estimates.
-- Compare penalized logistic regression with the current models.
+- Compare penalized logistic regression with the current model.
 - Create a Quarto report that distinguishes the original 2020 analysis from the corrected workflow.
 - Add an `renv.lock` file and fuller dataset provenance documentation.
 

@@ -5,8 +5,6 @@ scripts <- c(
   "01_import_preprocess.R",
   "02_exploratory_analysis.R",
   "03_logistic_regression.R",
-  "04_classification_tree.R",
-  "05_ensemble_models.R",
   "06_model_evaluation.R"
 )
 
