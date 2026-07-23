@@ -4,6 +4,12 @@ This project examines whether routinely collected physiological measurements can
 
 > **Important:** This is an educational portfolio project, not a validated clinical decision-support tool. Its results must not be used to guide patient care.
 
+## Current report
+
+**[View the current admission-only logistic-regression report](report/Survival_Classification_Report.pdf).**
+
+This is the repository's single authoritative report. It uses only measurements available at admission and supersedes the earlier analysis that combined initial and final records. Older report versions are intentionally excluded from the current repository tree to avoid ambiguity; they remain available through the file's [Git history](https://github.com/navidhedayati9/survival-classification/commits/main/report/Survival_Classification_Report.pdf).
+
 ## Research questions
 
 1. Which demographic and physiological variables are associated with patient survival?
@@ -124,7 +130,7 @@ survival-classification/
 │   └── run_analysis.R               # Complete execution pipeline
 ├── figures/                         # Generated visualizations
 ├── results/                         # Generated tables and metrics
-├── report/                          # Project report materials
+├── report/                          # Current report, builder, and report figures
 ├── README.md
 └── survival-classification.Rproj
 ```
