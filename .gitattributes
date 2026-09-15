@@ -1,1 +1,2 @@
 *.pdf binary
+report/build_report.py linguist-detectable=false
